@@ -11,10 +11,11 @@ phases:
       - kubectl version --short --client
   build:
     commands:
-      - echo Authenticate with EKS-Cluster ....
-      - aws eks --region region update-kubeconfig --name ${Cluster_Name}
-      - echo Deploying smartbear-testengine to EKS-Cluster
-      - kubectl apply -f deployment.yaml
+      - ls
+      # - echo Authenticate with EKS-Cluster ....
+      # - aws eks --region region update-kubeconfig --name ${Cluster_Name}
+      # - echo Deploying smartbear-testengine to EKS-Cluster
+      # - kubectl apply -f deployment.yaml
   post_build:
     commands:
       - echo Application deployed to EKS 
