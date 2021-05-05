@@ -12,11 +12,10 @@ phases:
     commands:
       - echo Authenticate with EKS-Cluster ....
       - aws sts get-caller-identity
-      - aws sts assume-role --role-arn arn:aws:iam::941929372609:role/EKS-CodeBuild-test-eksNodeInstanceRole-1NV2DPYWHYMY --role-session-name test
-      - aws eks --region ${AWS_REGION} update-kubeconfig --name ${Cluster_Name} --role-arn arn:aws:iam::941929372609:role/EKS-CodeBuild-test-eksNodeInstanceRole-1NV2DPYWHYMY
-      #- echo Deploying smartbear-testengine to EKS-Cluster
+      - aws eks --region ${AWS_REGION} update-kubeconfig --name ${Cluster_Name}
+      - echo Deploying smartbear-testengine to EKS-Cluster
       - kubectl get nodes
-      #- kubectl apply -f deployment.yaml
+      - kubectl apply -f deployment.yaml
   post_build:
     commands:
       - echo Application deployed to EKS 
