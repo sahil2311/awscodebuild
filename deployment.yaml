@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: smartbear-testengine
+  labels:
+    app: smartbear-testengine
+spec:
+  replicas: 2
+  minReadySeconds: 60
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 50%
+      maxUnavailable: 50%
+  selector:
+    matchLabels:
+      app: smartbear-testengine
+  template:
+    metadata:
+      labels:
+        app: smartbear-testengine
+    spec:
+      containers:
+        - name: smartbear-testengine
+          image: smartbear/readyapi-testengine:latest
+          imagePullPolicy: Always          
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              memory: 2000Mi
+              cpu: 200m
+            limits:
+              memory: 2000Mi
+              cpu: 200m
+          env:
+            - name: TESTENGINE_PASSWORD
+              value: "p@ssword"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: smartbear-testengine-service
+spec:
+  selector:
+    app: smartbear-testengine
+  type: LoadBalancer
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
