@@ -8,14 +8,12 @@ phases:
       - chmod +x ./kubectl
       - mkdir -p $HOME/bin && cp ./kubectl $HOME/bin/kubectl && export PATH=$PATH:$HOME/bin
       - echo 'export PATH=$PATH:$HOME/bin' >> ~/.bashrc
-      - kubectl version --short --client
   build:
     commands:
-      - ls
-      # - echo Authenticate with EKS-Cluster ....
-      # - aws eks --region region update-kubeconfig --name ${Cluster_Name}
-      # - echo Deploying smartbear-testengine to EKS-Cluster
-      # - kubectl apply -f deployment.yaml
+      - echo Authenticate with EKS-Cluster ....
+      - aws eks --region region update-kubeconfig --name ${Cluster_Name}
+      - echo Deploying smartbear-testengine to EKS-Cluster
+      - kubectl apply -f deployment.yaml
   post_build:
     commands:
       - echo Application deployed to EKS 
