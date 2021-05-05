@@ -11,9 +11,10 @@ phases:
   build:
     commands:
       - echo Authenticate with EKS-Cluster ....
-      - aws configure list
+      - aws sts get-caller-identity
       - aws eks --region ${AWS_REGION} update-kubeconfig --name ${Cluster_Name} 
-      - echo Deploying smartbear-testengine to EKS-Cluster
+      - kubectl config view --minify
+      #- echo Deploying smartbear-testengine to EKS-Cluster
       #- kubectl get nodes
       # - kubectl apply -f deployment.yaml
   post_build:
