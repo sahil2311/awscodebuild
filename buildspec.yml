@@ -27,7 +27,7 @@ phases:
       - aws eks --region ${AWS_REGION} update-kubeconfig --name ${Cluster_Name}
       - echo Deploying smartbear-testengine to EKS-Cluster
       - kubectl get nodes
-      #- kubectl apply -f deployment.yaml
+      - kubectl apply -f deployment.yaml
   post_build:
     commands:
       - echo Application deployed to EKS 
