@@ -32,14 +32,14 @@ Parameters:
 
   EKSDesiredWorkerNode:
     Type: Number
-    Default: 2
+    Default: 1
     Description: Number of desired Worker Node.
     MinValue: 1
     MaxValue: 7
 
   EKSWorkerNodeInstanceType:
     Type: String
-    Default: t2.micro
+    Default: t2.medium
     AllowedValues: [t2.nano, t2.micro, t2.small, t2.medium, t2.large, t2.xlarge, t2.2xlarge,
                     t3.nano, t3.micro, t3.small, t3.medium, t3.large, t3.xlarge, t3.2xlarge,
                     m4.large, m4.xlarge, m4.2xlarge, m4.4xlarge, m4.10xlarge,
@@ -73,14 +73,6 @@ Parameters:
     Type: AWS::EC2::Subnet::Id
     Description: Select your second Subnet.
 
-  AvailabilityZonePublicSubnet01:
-    Type: AWS::EC2::AvailabilityZone::Name
-    Description: Availability Zone for the Public Subnet 01.
-
-  AvailabilityZonePublicSubnet02:
-    Type: AWS::EC2::AvailabilityZone::Name
-    Description: Availability Zone for the Public Subnet 02.
-
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
@@ -90,9 +82,7 @@ Metadata:
         Parameters:
           - VpcBlock
           - PublicSubnet01Block
-          - AvailabilityZonePublicSubnet01
           - PublicSubnet02Block
-          - AvailabilityZonePublicSubnet02
 
       -
         Label:
@@ -174,104 +164,6 @@ Resources:
            - CloudFormation
     Type: AWS::IAM::Role
 
-  eksVPC:
-    Type: AWS::EC2::VPC
-    Properties:
-      CidrBlock: !Ref VpcBlock
-      EnableDnsSupport: true
-      EnableDnsHostnames: true
-      Tags:
-        - Key: Name
-          Value: !Sub '${AWS::StackName}-VPC'
-        - Key: Project
-          Value: aws-eks
-
-  eksInternetGateway:
-    Type: AWS::EC2::InternetGateway
-    Properties:
-      Tags:
-        - Key: Name
-          Value: !Sub '${AWS::StackName}-InternetGateway'
-        - Key: Project
-          Value: aws-eks
-
-  eksVPCGatewayAttachment:
-    Type: AWS::EC2::VPCGatewayAttachment
-    Properties:
-      InternetGatewayId: !Ref eksInternetGateway
-      VpcId: !Ref eksVPC
-
-  eksPublicRouteTable:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      VpcId: !Ref eksVPC
-      Tags:
-        - Key: Name
-          Value: !Sub '${AWS::StackName}-RouteTable'
-        - Key: Project
-          Value: aws-eks
-
-  eksPublicRoute:
-    DependsOn: eksVPCGatewayAttachment
-    Type: AWS::EC2::Route
-    Properties:
-      RouteTableId: !Ref eksPublicRouteTable
-      DestinationCidrBlock: 0.0.0.0/0
-      GatewayId: !Ref eksInternetGateway
-
-  eksPublicSubnet01:
-    Type: AWS::EC2::Subnet
-    Properties:
-      AvailabilityZone: !Ref AvailabilityZonePublicSubnet01
-      MapPublicIpOnLaunch: true
-      CidrBlock:
-        Ref: PublicSubnet01Block
-      VpcId:
-        Ref: eksVPC
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-PublicSubnet01"
-        - Key: Project
-          Value: aws-eks
-
-  eksPublicSubnet02:
-    Type: AWS::EC2::Subnet
-    Properties:
-      AvailabilityZone: !Ref AvailabilityZonePublicSubnet02
-      MapPublicIpOnLaunch: true
-      CidrBlock:
-        Ref: PublicSubnet02Block
-      VpcId:
-        Ref: eksVPC
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-PublicSubnet02"
-        - Key: Project
-          Value: aws-eks
-
-  eksPublicSubnet01RouteTableAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      SubnetId: !Ref eksPublicSubnet01
-      RouteTableId: !Ref eksPublicRouteTable
-
-  eksPublicSubnet02RouteTableAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      SubnetId: !Ref eksPublicSubnet02
-      RouteTableId: !Ref eksPublicRouteTable
-
-  eksSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: Cluster communication with worker nodes
-      VpcId: !Ref eksVPC
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-SecurityGroup"
-        - Key: Project
-          Value: aws-eks
-
   eksIAMRole:
     Type: AWS::IAM::Role
     Properties:
@@ -297,12 +189,10 @@ Resources:
       RoleArn:
         "Fn::GetAtt": [ "eksIAMRole", "Arn" ]
       ResourcesVpcConfig:
-        SecurityGroupIds:
-          - !Ref eksSecurityGroup
         SubnetIds:
-          - !Ref eksPublicSubnet01
-          - !Ref eksPublicSubnet02
-    DependsOn: [ eksIAMRole, eksPublicSubnet01, eksPublicSubnet02, eksSecurityGroup ]
+          - !Ref PublicSubnet01Block
+          - !Ref PublicSubnet02Block
+    DependsOn: [ eksIAMRole ]
 
   eksNodeInstanceRole:
     Type: AWS::IAM::Role
@@ -341,8 +231,8 @@ Resources:
       Labels:
         Project: aws-eks
       Subnets:
-        - !Ref eksPublicSubnet01
-        - !Ref eksPublicSubnet02
+        - !Ref PublicSubnet01Block
+        - !Ref PublicSubnet02Block
     DependsOn: [ eksCluster, eksNodeInstanceRole ]
 
   CodeBuildPolicy:
@@ -572,10 +462,7 @@ Outputs:
     Value: !Ref ArtifactsBucket
   SubnetIds:
     Description: Subnets IDs in the eksVPC
-    Value: !Join [ ",", [ !Ref eksPublicSubnet01, !Ref eksPublicSubnet02 ] ]
-  SecurityGroups:
-    Description: Security group for the cluster control plane communication with worker nodes
-    Value: !Join [ ",", [ !Ref eksSecurityGroup ] ]
+    Value: !Join [ ",", [ !Ref PublicSubnet01Block, !Ref PublicSubnet02Block ] ]
   VpcId:
     Description: The eksVPC Id
-    Value: !Ref eksVPC
+    Value: !Ref VpcBlock
