@@ -4,6 +4,7 @@ env:
     parameter-store:
         AWS_ACCESS_KEY_ID_PARAM: /CodeBuild/AWS_ACCESS_KEY_ID
         AWS_SECRET_ACCESS_KEY_PARAM: /CodeBuild/AWS_SECRET_ACCESS_KEY
+        
 phases:
   pre_build:
     commands:
