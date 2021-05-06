@@ -4,7 +4,7 @@ env:
     parameter-store:
         AWS_ACCESS_KEY_ID_PARAM: /CodeBuild/AWS_ACCESS_KEY_ID
         AWS_SECRET_ACCESS_KEY_PARAM: /CodeBuild/AWS_SECRET_ACCESS_KEY
-        
+
 phases:
   pre_build:
     commands:
@@ -19,7 +19,9 @@ phases:
       - echo 'export PATH=$PATH:$HOME/bin' >> ~/.bashrc
   build:
     commands:
-      - echo Authenticate with EKS-Cluster ....
+      - echo Authenticate with EKS-Cluster ...
+      - echo $AWS_ACCESS_KEY_ID_PARAM
+      - echo $AWS_SECRET_ACCESS_KEY_PARAM
       - export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID_PARAM
       - export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY_PARAM
       - aws eks --region ${AWS_REGION} update-kubeconfig --name ${Cluster_Name}
