@@ -1,0 +1,133 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Parameters:
+  VpcBlock:
+    Type: String
+    Default: 172.16.1.0/16
+    Description: The CIDR range for the VPC. This should be a valid private (RFC 1918) CIDR range.
+    AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
+    ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.
+
+  PublicSubnet01Block:
+    Type: String
+    Default: 172.16.0.0/17
+    Description: CidrBlock for public subnet 01 within the VPC.
+    AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
+    ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.
+
+  PublicSubnet02Block:
+    Type: String
+    Default: 172.16.128.0/17
+    Description: CidrBlock for public subnet 02 within the VPC.
+    AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
+    ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.
+
+  AvailabilityZonePublicSubnet01:
+    Type: CommaDelimitedList<AWS::EC2::AvailabilityZone::Name>
+    Default: ap-south-1a
+    Description: Availability Zone for the Public Subnet 01.
+
+  AvailabilityZonePublicSubnet02:
+    Type: CommaDelimitedList<AWS::EC2::AvailabilityZone::Name>
+    Default: ap-south-1b
+    Description: Availability Zone for the Public Subnet 02.
+
+Resources:
+  eksVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcBlock
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-VPC'
+        - Key: Project
+          Value: aws-eks
+
+  eksInternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-InternetGateway'
+        - Key: Project
+          Value: aws-eks
+
+  eksVPCGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref eksInternetGateway
+      VpcId: !Ref eksVPC
+
+  eksPublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref eksVPC
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-RouteTable'
+        - Key: Project
+          Value: aws-eks
+
+  eksPublicRoute:
+    DependsOn: eksVPCGatewayAttachment
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref eksPublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref eksInternetGateway
+
+  PublicSubnetA:
+      Type: AWS::EC2::Subnet
+      Properties:
+        VpcId: !Ref eksVPC
+        CidrBlock: !Ref PublicSubnet01Block
+        AvailabilityZone: !Ref AvailabilityZonePublicSubnet01
+        Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-Public-A
+
+  PublicSubnetB:
+      Type: AWS::EC2::Subnet
+      Properties:
+        VpcId: !Ref eksVPC
+        CidrBlock: !Ref PublicSubnet02Block
+        AvailabilityZone: !Ref AvailabilityZonePublicSubnet02
+        Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-Public-B
+
+  eksPublicSubnet01RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnetA
+      RouteTableId: !Ref eksPublicRouteTable
+
+  eksPublicSubnet02RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnetB
+      RouteTableId: !Ref eksPublicRouteTable
+
+  eksSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Cluster communication with worker nodes
+      VpcId: !Ref eksVPC
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-SecurityGroup'
+        - Key: Project
+          Value: aws-eks
+
+Outputs:
+  SubnetIds:
+    Description: Subnets IDs in the eksVPC
+    Value: !Join [ ',', [ !Ref PublicSubnetA, !Ref PublicSubnetB ] ]
+  SecurityGroups:
+    Description: Security group for the cluster control plane communication with worker nodes
+    Value: !Join [ ',', [ !Ref eksSecurityGroup ] ]
+  VpcId:
+    Description: The eksVPC Id
+    Value: !Ref eksVPC
