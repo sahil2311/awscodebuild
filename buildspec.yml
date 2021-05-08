@@ -22,7 +22,6 @@ phases:
       - echo Authenticate with EKS-Cluster ...
       - export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID_PARAM
       - export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY_PARAM
-      - aws s3 ls
       - aws eks --region ${AWS_REGION} update-kubeconfig --name ${Cluster_Name}
       - kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
       - echo ""
